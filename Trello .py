@@ -3,6 +3,11 @@ from functools import wraps
 from enum import Enum
 import uuid
 
+class Board:
+    pass
+class Card:
+    pass
+
 class UUIDGenerator:
     @staticmethod
     def generate() -> str:
@@ -19,6 +24,8 @@ class User:
     userId: str
     name: str = None
     email: str = None
+    boards: dict[str,Board] = field(default_factory=dict)
+    cards: list[str,Card] = field(default_factory=dict)
 
     def info(self):
         temp = {
@@ -50,6 +57,7 @@ class List:
     id :str
     name: str = None
     cards: dict[str,Card] = field(default_factory = dict)
+    board: Board
 
     def info(self):
         temp = {
@@ -190,8 +198,16 @@ class BoardService:
         self.boards[boardId].url = url
     
     @board_exists
+    def setName(self, boardId, name: str):
+        self.boards[boardId].name = name
+
+    @board_exists
     def info(self, boardId):
         return self.boards[boardId].info()
+    
+    @board_exists
+    def findBoard(self, boardId):
+        return self.boards[boardId]
         
     def infoAllBoards(self):
         temp = []
@@ -205,7 +221,7 @@ class Trello:
     def __init__(self):
         self.boardService = BoardService()
         self.userService = UserService()
-        self.ListService = ListService()
+        self.listService = ListService()
         self.cardService = CardService()
     
     def createBoard(self, name):
@@ -223,4 +239,37 @@ class Trello:
     
     def showCard(self, cardId):
         return self.cardService.info(cardId=cardId)
+
+    def createList(self, boardId, nameOfList):
+        board = self.boardService.findBoard(boardId)
+        if board is False:
+            return False
+        list = self.listService.addList(name=nameOfList)
+        list.board = board
+        board.lists[list.id] = list
+    
+    def setBoardName(self, boardId, name):
+        self.boardService.setName(boardId=boardId, name=name)
+    
+    def setBoardPrivacy(self, boardId, privacy: str):
+        temp = None
+        if privacy.lower() == "private":
+            temp = BoardPrivacy.PRIVATE
+        elif privacy.lower() == "public":
+            temp = BoardPrivacy.PUBLIC
+        else:
+            return False
+        self.boardService.changeBoardPrivacyById(boardId=boardId, privacy=temp)
+    
+    def addUserToBoard(self, boardId, userId):
+        user = self.userService.findUser(id=userId)
+        if user is False:
+            return False
+        board = self.boardService.findBoard(boardId=boardId)
+        if board is False:
+            return False
+        board.members[userId] = user
+        user.boards[boardId] = board
+    
+     
 
