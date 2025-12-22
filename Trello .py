@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from functools import wraps
 from enum import Enum
 import uuid
 
@@ -63,6 +64,8 @@ class Board:
     id: str
     name: str = None
     privacy: BoardPrivacy = None
+    url: str = None
+    members: dict[str,User] = field(default_factory = dict)
     lists: dict[str,List] = field(default_factory = dict)
 
     def info(self):
@@ -77,6 +80,14 @@ class Board:
 class UserService:
     def __init__(self):
         self.users :dict[str,User] = {}
+    
+    def user_exist(func):
+        @wrapper(func)
+        def wrapper(self, userId, *args, **kwargs):
+            if userId not in self.users:
+                return False
+            return func(self, userId, *args, **kwargs)
+        return wrapper
 
     def addUser(self, name, email):
         id = idGenerator.generate()
@@ -84,21 +95,25 @@ class UserService:
         self.users[id] = tempUser
         return tempUser
     
+    @user_exist
     def removeUser(self, id):
-        if id not in self.users:
-            return False
-        else:
-            del self.users[id]
+        del self.users[id]
 
+    @user_exist
     def findUser(self, id: str):
-        if id not in self.users.keys():
-            return False
-        else:
-            return self.users[id]
+        return self.users[id]
 
 class CardService:
     def __init__(self):
         self.cards :dict[str,Card] = {}
+    
+    def card_exists(func):
+        @wraps(func)
+        def wrapper(self, cardId, *args, **kwargs):
+            if cardId not in self.lists:
+                return False
+            return func(self, cardId, *args, **kwargs)
+        return wrapper
 
     def addCard(self, name):
         id = idGenerator.generate()
@@ -106,21 +121,25 @@ class CardService:
         self.cards[id] = tempCard
         return tempCard
     
+    @card_exists
     def deleteCard(self, id):
-        if id in self.cards.keys():
-            del self.cards[id]
-        else:
-            return False
-        
+        del self.cards[id]
+    
+    @card_exists
     def info(self, cardId):
-        if cardId in self.cards.keys():
-            return self.cards[cardId]
-        else:
-            return False
+        return self.cards[cardId]
 
 class ListService:
     def __init__(self):
         self.lists :dict[str,List]= {}
+    
+    def list_exists(func):
+        @wraps(func)
+        def wrapper(self, listId, *args, **kwargs):
+            if listId not in self.lists:
+                return False
+            return func(self, listId, *args, **kwargs)
+        return wrapper
 
     def addList(self, name):
         id = idGenerator.generate()
@@ -128,21 +147,25 @@ class ListService:
         self.lists[id] = tempList
         return tempList
     
+    @list_exists
     def deleteList(self, id):
-        if id in self.lists.keys():
-            del self.lists[id]
-        else:
-            return False
+        del self.lists[id]
     
+    @list_exists
     def info(self, listId):
-        if listId in self.lists.keys():
-            return self.lists[listId].info()
-        else:
-            return False
+        return self.lists[listId].info()
 
 class BoardService:
     def __init__(self):
         self.boards :dict[str,Board] = {}
+    
+    def board_exists(func):
+        @wraps(func)
+        def wrapper(self, boardId, *args, **kwargs):
+            if boardId not in self.boards:
+                return False
+            return func(self, boardId, *args, **kwargs)
+        return wrapper
 
     def addBoard(self, name):
         id = idGenerator.generate()
@@ -150,17 +173,25 @@ class BoardService:
         self.boards[id] = tempBoard
         return tempBoard
     
+    @board_exists
     def deleteBoard(self, id):
-        if id in self.boards.keys():
-            del self.boards[id]
-        else:
-            return False
-        
+        del self.boards[id]
+    
+    @board_exists
+    def changeBoardPrivacyById(self, boardId, privacy):
+        self.boards[boardId].privacy = privacy
+    
+    @board_exists
+    def addMember(self, boardId, user: User):
+        self.boards[boardId].members[user.userId] = user
+    
+    @board_exists
+    def setUrl(self, boardId, url: str):
+        self.boards[boardId].url = url
+    
+    @board_exists
     def info(self, boardId):
-        if boardId in self.boards.keys():
-            return self.boards[boardId].info()
-        else:
-            return False
+        return self.boards[boardId].info()
         
     def infoAllBoards(self):
         temp = []
