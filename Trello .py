@@ -268,6 +268,7 @@ class BoardService:
     def __init__(self):
         self.boardDao = boardDao
         self.listDao = listDao
+        self.cardDao = cardDao
 
     def addBoard(self, name):
         board = Board(name = name)
@@ -277,7 +278,18 @@ class BoardService:
             return False
 
     def deleteBoard(self, boardId):    
-        pass
+        board = self.boardDao.findById(boardId=boardId)
+        if board is None:
+            return False
+        
+        for listId in board.lists.keys():
+            list = self.listDao.findById(listId=listId)
+            for cardId in list.cards.keys():
+                cardDao.deleteById(cardId=cardId)
+            self.listDao.deleteById(listId=listId)
+        self.boardDao.deleteById(boardId=boardId)
+        return True
+
 
     def changeBoardPrivacyById(self, boardId, privacy):
         board = self.boardDao.findById(boardId=boardId)
