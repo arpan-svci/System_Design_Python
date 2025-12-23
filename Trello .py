@@ -24,8 +24,8 @@ class User:
     userId: str
     name: str = None
     email: str = None
-    boards: dict[str,Board] = field(default_factory=dict)
-    cards: list[str,Card] = field(default_factory=dict)
+    boards: dict[str,bool] = field(default_factory=dict)
+    cards: list[str,bool] = field(default_factory=dict)
 
     def info(self):
         temp = {
@@ -40,14 +40,14 @@ class Card:
     id: str
     name: str = None
     description: str = None
-    assignedUsers: dict[str,User] = field(default_factory = dict)
+    assignedUsers: dict[str,bool] = field(default_factory = dict)
 
     def info(self):
         temp = {
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "assigned Users": [user.info() for user in self.assignedUsers.values()]
+            "assigned Users": [userDao.findById(userId=userId).info() for userId, available in self.assignedUsers.items() if available is True]
         }
         return temp
 
@@ -55,14 +55,14 @@ class Card:
 class List:
     id :str
     name: str = None
-    cards: dict[str,Card] = field(default_factory = dict)
-    board: Board
+    cards: dict[str,bool] = field(default_factory = dict)
+    boardId: str
 
     def info(self):
         temp = {
             "id": self.id,
             "name": self.name,
-            "cards": [card.info() for card in self.cards.values()]
+            "cards": [cardDao.findById(cardId=cardId).info() for cardId, available in self.cards.items() if available is True]
         }
         return temp
 
@@ -72,15 +72,15 @@ class Board:
     name: str = None
     privacy: BoardPrivacy = None
     url: str = None
-    members: dict[str,User] = field(default_factory = dict)
-    lists: dict[str,List] = field(default_factory = dict)
+    members: dict[str,bool] = field(default_factory = dict)
+    lists: dict[str,bool] = field(default_factory = dict)
 
     def info(self):
         temp = {
             "id": self.id,
             "name": self.name,
             "privacy": self.privacy,
-            "lists": [list.info() for list in self.lists.values()]
+            "lists": [boardDao.findById(listId).info() for listId, available in self.lists.items() if available is True]
         }
         return temp
 
@@ -263,7 +263,7 @@ class ListService:
 
 class BoardService:
     def __init__(self):
-        self.boards :dict[str,Board] = {}
+        self.boardDao = boardDao
 
     def addBoard(self, name):
         pass
@@ -293,7 +293,7 @@ class BoardService:
         pass
 
     def infoAllBoards(self):
-        pass
+        for board in self.boardDao
 
 class Trello:
     def __init__(self):
