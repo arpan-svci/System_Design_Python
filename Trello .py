@@ -85,6 +85,139 @@ class Board:
         }
         return temp
 
+class UserDao:
+    def __init__(self):
+        self.users :dict[str,User] = {}
+    
+    def user_exist(func):
+        @wrapper(func)
+        def wrapper(self, userId, *args, **kwargs):
+            if userId not in self.users:
+                return None
+            return func(self, userId, *args, **kwargs)
+        return wrapper
+
+    def createUser(self, user:User):
+        userId = idGenerator.generate()
+        user.userId = userId
+        self.users[userId] = user
+        return user
+    
+    @user_exist
+    def findById(self, userId:str):
+        return self.users[userId]
+    
+    @user_exist
+    def deleteById(self, userId):
+        user = self.users[userId]
+        del self.users[userId]
+        return user
+    
+    @user_exist
+    def updateUserById(self, userId: str, user: User):
+        self.users[userId] = user
+        return self.users[userId]
+
+class CardDao:
+    def __init__(self):
+        self.cards :dict[str,Card] = {}
+
+    def card_exists(func):
+        @wraps(func)
+        def wrapper(self, cardId, *args, **kwargs):
+            if cardId not in self.lists:
+                return None
+            return func(self, cardId, *args, **kwargs)
+        return wrapper
+
+    def createCard(self, card :Card):
+        cardId = idGenerator.generate()
+        card.id = cardId
+        self.cards[cardId] = card
+        return card
+    
+    @card_exists
+    def findById(self, cardId):
+        return self.cards[cardId]
+    
+    @card_exists
+    def updateById(self, cardId, card: Card):
+        self.cards[cardId] = card
+        return self.cards[cardId]
+    
+    @card_exists
+    def deleteById(self, cardId):
+        card = self.cards[cardId]
+        del self.cards[cardId]
+        return card
+
+class ListDao:
+    def __init__(self):
+        self.lists :dict[str,List] = {}
+    
+    def list_exists(func):
+        @wraps(func)
+        def wrapper(self, listId, *args, **kwargs):
+            if listId not in self.lists:
+                return None
+            return func(self, listId, *args, **kwargs)
+        return wrapper
+
+    @list_exists
+    def findById(self, listId):
+        return self.lists[listId]
+    
+    def createList(self, list: List):
+        listId = idGenerator.generate()
+        list.id = listId
+        self.lists[listId] = list
+        return list
+    
+    @list_exists
+    def updateById(self, listId, list: List):
+        self.lists[listId] = list
+        return self.lists[listId]
+    
+    @list_exists
+    def deleteById(self, listId):
+        list = self.lists[listId]
+        del self.lists[listId]
+        return list
+
+class BoardDao:
+    def __init__(self):
+        self.boards :dict[str,Board] = {}
+    
+    def board_exists(func):
+        @wraps(func)
+        def wrapper(self, boardId, *args, **kwargs):
+            if boardId not in self.boards:
+                return False
+            return func(self, boardId, *args, **kwargs)
+        return wrapper
+
+
+    def createBoard(self, board: Board):
+        boardId = idGenerator.generate()
+        board.id = boardId
+        self.boards[boardId] = board
+        return board
+    
+    @board_exists
+    def findById(self, boardId):
+        return self.boards[boardId]
+    
+    @board_exists
+    def updateById(self, boardId: str, board: Board):
+        self.boards[boardId] = board
+        return self.boards[boardId]
+    
+    @board_exists
+    def deleteById(self, boardId: str):
+        board = self.boards[boardId]
+        del self.boards[boardId]
+        return board
+
 class UserService:
     def __init__(self):
         self.users :dict[str,User] = {}
@@ -182,24 +315,34 @@ class BoardService:
         return tempBoard
     
     @board_exists
-    def deleteBoard(self, id):
-        del self.boards[id]
+    def deleteBoard(self, boardId):    
+        del self.boards[boardId]
+        return True
     
     @board_exists
     def changeBoardPrivacyById(self, boardId, privacy):
         self.boards[boardId].privacy = privacy
+        return True
     
     @board_exists
     def addMember(self, boardId, user: User):
         self.boards[boardId].members[user.userId] = user
+        return True
+    
+    @board_exists
+    def addList(self, boardId, list: List):
+        self.boards[boardId].lists[list.id] = list
+        return True
     
     @board_exists
     def setUrl(self, boardId, url: str):
         self.boards[boardId].url = url
+        return True
     
     @board_exists
     def setName(self, boardId, name: str):
         self.boards[boardId].name = name
+        return True
 
     @board_exists
     def info(self, boardId):
@@ -224,10 +367,6 @@ class Trello:
         self.listService = ListService()
         self.cardService = CardService()
     
-    def createBoard(self, name):
-        board = self.boardService.addBoard(name=name)
-        return board
-    
     def show(self):
         return self.boardService.info()
     
@@ -240,16 +379,20 @@ class Trello:
     def showCard(self, cardId):
         return self.cardService.info(cardId=cardId)
 
+    def createBoard(self, name):
+        board = self.boardService.addBoard(name=name)
+        return board
+    
     def createList(self, boardId, nameOfList):
         board = self.boardService.findBoard(boardId)
         if board is False:
             return False
         list = self.listService.addList(name=nameOfList)
         list.board = board
-        board.lists[list.id] = list
+        self.boardService.addList(boardId=boardId, list=list)
     
     def setBoardName(self, boardId, name):
-        self.boardService.setName(boardId=boardId, name=name)
+        return self.boardService.setName(boardId=boardId, name=name)
     
     def setBoardPrivacy(self, boardId, privacy: str):
         temp = None
@@ -259,17 +402,19 @@ class Trello:
             temp = BoardPrivacy.PUBLIC
         else:
             return False
-        self.boardService.changeBoardPrivacyById(boardId=boardId, privacy=temp)
+        return self.boardService.changeBoardPrivacyById(boardId=boardId, privacy=temp)
     
     def addUserToBoard(self, boardId, userId):
         user = self.userService.findUser(id=userId)
         if user is False:
             return False
-        board = self.boardService.findBoard(boardId=boardId)
-        if board is False:
+        status = self.boardService.addMember(boardId=boardId, user=user)
+        if status == False:
             return False
-        board.members[userId] = user
-        user.boards[boardId] = board
+    
+    def deleteBoard(self, boardId):
+        return self.boardService.deleteBoard(boardId)
+        
     
      
 
