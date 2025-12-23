@@ -51,7 +51,6 @@ class Card:
         }
         return temp
 
-
 @dataclass
 class List:
     id :str
@@ -218,147 +217,83 @@ class BoardDao:
         del self.boards[boardId]
         return board
 
+userDao = UserDao()
+cardDao = CardDao()
+listDao = ListDao()
+boardDao = BoardDao()
+
 class UserService:
     def __init__(self):
-        self.users :dict[str,User] = {}
-    
-    def user_exist(func):
-        @wrapper(func)
-        def wrapper(self, userId, *args, **kwargs):
-            if userId not in self.users:
-                return False
-            return func(self, userId, *args, **kwargs)
-        return wrapper
+        self.userDao = userDao
 
     def addUser(self, name, email):
-        id = idGenerator.generate()
-        tempUser = User(userId= id, name= name, email= email)
-        self.users[id] = tempUser
-        return tempUser
-    
-    @user_exist
+        pass
+
     def removeUser(self, id):
         del self.users[id]
 
-    @user_exist
     def findUser(self, id: str):
         return self.users[id]
 
 class CardService:
     def __init__(self):
         self.cards :dict[str,Card] = {}
-    
-    def card_exists(func):
-        @wraps(func)
-        def wrapper(self, cardId, *args, **kwargs):
-            if cardId not in self.lists:
-                return False
-            return func(self, cardId, *args, **kwargs)
-        return wrapper
 
     def addCard(self, name):
-        id = idGenerator.generate()
-        tempCard = Card(id=id, name=name)
-        self.cards[id] = tempCard
-        return tempCard
+        pass
     
-    @card_exists
     def deleteCard(self, id):
-        del self.cards[id]
+        pass
     
-    @card_exists
     def info(self, cardId):
-        return self.cards[cardId]
+        pass
 
 class ListService:
     def __init__(self):
-        self.lists :dict[str,List]= {}
-    
-    def list_exists(func):
-        @wraps(func)
-        def wrapper(self, listId, *args, **kwargs):
-            if listId not in self.lists:
-                return False
-            return func(self, listId, *args, **kwargs)
-        return wrapper
+        self.listDao = listDao
 
     def addList(self, name):
-        id = idGenerator.generate()
-        tempList = List(id=id, name=name)
-        self.lists[id] = tempList
-        return tempList
+        pass
     
-    @list_exists
     def deleteList(self, id):
-        del self.lists[id]
+        pass
     
-    @list_exists
     def info(self, listId):
-        return self.lists[listId].info()
+        pass
 
 class BoardService:
     def __init__(self):
         self.boards :dict[str,Board] = {}
-    
-    def board_exists(func):
-        @wraps(func)
-        def wrapper(self, boardId, *args, **kwargs):
-            if boardId not in self.boards:
-                return False
-            return func(self, boardId, *args, **kwargs)
-        return wrapper
 
     def addBoard(self, name):
-        id = idGenerator.generate()
-        tempBoard = Board(id=id, name=name)
-        self.boards[id] = tempBoard
-        return tempBoard
-    
-    @board_exists
-    def deleteBoard(self, boardId):    
-        del self.boards[boardId]
-        return True
-    
-    @board_exists
-    def changeBoardPrivacyById(self, boardId, privacy):
-        self.boards[boardId].privacy = privacy
-        return True
-    
-    @board_exists
-    def addMember(self, boardId, user: User):
-        self.boards[boardId].members[user.userId] = user
-        return True
-    
-    @board_exists
-    def addList(self, boardId, list: List):
-        self.boards[boardId].lists[list.id] = list
-        return True
-    
-    @board_exists
-    def setUrl(self, boardId, url: str):
-        self.boards[boardId].url = url
-        return True
-    
-    @board_exists
-    def setName(self, boardId, name: str):
-        self.boards[boardId].name = name
-        return True
+        pass
 
-    @board_exists
+    def deleteBoard(self, boardId):    
+        pass
+
+    def changeBoardPrivacyById(self, boardId, privacy):
+        pass
+
+    def addMember(self, boardId, user: User):
+        pass
+
+    def addList(self, boardId, list: List):
+        pass
+
+    def setUrl(self, boardId, url: str):
+        pass
+
+    def setName(self, boardId, name: str):
+        pass
+
     def info(self, boardId):
-        return self.boards[boardId].info()
-    
-    @board_exists
+        pass
+
     def findBoard(self, boardId):
-        return self.boards[boardId]
-        
+        pass
+
     def infoAllBoards(self):
-        temp = []
-        for board in self.boards.values():
-            temp.append(board.info())
-        if len(temp) == 0:
-            return False
-        return temp
+        pass
 
 class Trello:
     def __init__(self):
