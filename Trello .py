@@ -245,21 +245,48 @@ class CardService:
     def addCard(self, name):
         pass
     
-    def deleteCard(self, id):
-        pass
+    def deleteCard(self, cardId):
+        if self.cardDao.deleteById(cardId=cardId) is None:
+            return False
+        else:
+            return True
     
     def info(self, cardId):
         return self.cardDao.findById(cardId=cardId).info()
+    
+    def changeCardName(self, cardId , cardName):
+        card = self.cardDao.findById(cardId=cardId)
+        if card is None:
+            return False
+        card.name = cardName
+        return True
 
 class ListService:
     def __init__(self):
         self.listDao = listDao
+        self.cardDao = cardDao
 
     def addList(self, name):
         pass
     
-    def deleteList(self, id):
-        pass
+    def createCard(self, listId , cardName):
+        list = self.listDao.findById(listId=listId)
+        if list is None:
+            return False
+        card = Card()
+        card.name = cardName
+        card = self.cardDao.createCard(card=card)
+        list.cards[card.id] = True
+        return True
+    
+    def deleteList(self, listId):
+        list = self.listDao.findById(listId=listId)
+        if list is None:
+            return False
+        for cardId in list.cards.keys():
+            self.cardDao.deleteById(cardId=cardId)
+        self.listDao.deleteById(listId=listId)
+        return True
     
     def info(self, listId):
         return self.listDao.findById(listId=listId).info()
@@ -269,6 +296,7 @@ class BoardService:
         self.boardDao = boardDao
         self.listDao = listDao
         self.cardDao = cardDao
+        self.userDao = userDao
 
     def addBoard(self, name):
         board = Board(name = name)
@@ -299,11 +327,14 @@ class BoardService:
         self.boardDao.updateById(boardId=boardId, board=board)
         return True
 
-    def addMember(self, boardId, user: User):
-        pass
-
-    def addList(self, boardId, list: List):
-        pass
+    def addMember(self, boardId, userId):
+        user = self.userDao.findById(userId=userId)
+        if user is None:
+            return False
+        board = self.boardDao.findById(boardId=boardId)
+        if board is None:
+            return False
+        board.members[userId] = True
 
     def setUrl(self, boardId, url: str):
         pass
@@ -332,6 +363,7 @@ class BoardService:
         list = List(name=nameOfList)
         list = self.listDao.createList(list=list)
         board.lists[list.id] = True
+        list.boardId = boardId
         return True
 
 class Trello:
@@ -357,7 +389,10 @@ class Trello:
         return self.boardService.addBoard(name=name)
     
     def createList(self, boardId, nameOfList):
-        self.boardService.createList(boardId=boardId, nameOfList=nameOfList)
+        return self.boardService.createList(boardId=boardId, nameOfList=nameOfList)
+    
+    def createCard(self, listId, cardName):
+        return self.listService.createCard(listId = listId, cardName = cardName)
     
     def setBoardName(self, boardId, name):
         return self.boardService.setName(boardId=boardId, name=name)
@@ -373,16 +408,17 @@ class Trello:
         return self.boardService.changeBoardPrivacyById(boardId=boardId, privacy=temp)
     
     def addUserToBoard(self, boardId, userId):
-        user = self.userService.findUser(id=userId)
-        if user is False:
-            return False
-        status = self.boardService.addMember(boardId=boardId, user=user)
-        if status == False:
-            return False
+        return self.boardService.addMember(boardId=boardId, userId=userId)
     
     def deleteBoard(self, boardId):
         return self.boardService.deleteBoard(boardId)
-        
     
-     
+    def deleteList(self, listId):
+        return self.listService.deleteList(listId = listId)
 
+    def deleteCard(self, cardId):
+        return self.cardService.deleteCard(cardId=cardId)
+    
+    def changeCardName(self, cardId, name):
+        return self.cardService.changeCardName(cardId = cardId, cardName = name)
+    
