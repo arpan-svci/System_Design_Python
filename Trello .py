@@ -216,6 +216,9 @@ class BoardDao:
         board = self.boards[boardId]
         del self.boards[boardId]
         return board
+    
+    def findAll(self):
+        return [board for board in self.boards.values()]
 
 userDao = UserDao()
 cardDao = CardDao()
@@ -237,7 +240,7 @@ class UserService:
 
 class CardService:
     def __init__(self):
-        self.cards :dict[str,Card] = {}
+        self.cardDao = cardDao
 
     def addCard(self, name):
         pass
@@ -246,7 +249,7 @@ class CardService:
         pass
     
     def info(self, cardId):
-        pass
+        return self.cardDao.findById(cardId=cardId).info()
 
 class ListService:
     def __init__(self):
@@ -259,20 +262,30 @@ class ListService:
         pass
     
     def info(self, listId):
-        pass
+        return self.listDao.findById(listId=listId).info()
 
 class BoardService:
     def __init__(self):
         self.boardDao = boardDao
+        self.listDao = listDao
 
     def addBoard(self, name):
-        pass
+        board = Board(name = name)
+        if self.boardDao.createBoard(board = board) is not None:
+            return True
+        else:
+            return False
 
     def deleteBoard(self, boardId):    
         pass
 
     def changeBoardPrivacyById(self, boardId, privacy):
-        pass
+        board = self.boardDao.findById(boardId=boardId)
+        if board is None:
+            return False
+        board.privacy = privacy
+        self.boardDao.updateById(boardId=boardId, board=board)
+        return True
 
     def addMember(self, boardId, user: User):
         pass
@@ -284,16 +297,30 @@ class BoardService:
         pass
 
     def setName(self, boardId, name: str):
-        pass
+        board = self.boardDao.findById(boardId=boardId)
+        if board is None:
+            return False
+        board.name = name
+        self.boardDao.updateById(boardId=boardId, board=board)
+        return True
 
     def info(self, boardId):
-        pass
+        return self.boardDao.findById(boardId=boardId).info()
 
     def findBoard(self, boardId):
-        pass
+        return self.boardDao.findById(boardId=boardId)
 
     def infoAllBoards(self):
-        for board in self.boardDao
+        return [board.info() for board in self.boardDao.findAll()]
+    
+    def createList(self, boardId, nameOfList):
+        board = self.boardDao.findById(boardId=boardId)
+        if board is None:
+            return False
+        list = List(name=nameOfList)
+        list = self.listDao.createList(list=list)
+        board.lists[list.id] = True
+        return True
 
 class Trello:
     def __init__(self):
@@ -303,28 +330,22 @@ class Trello:
         self.cardService = CardService()
     
     def show(self):
-        return self.boardService.info()
+        return self.boardService.infoAllBoards()
     
     def showBoard(self, boardId):
         return self.boardService.info(boardId=boardId)
     
     def showList(self, listId):
-        return self.ListService.info(listId=listId)
+        return self.listService.info(listId=listId)
     
     def showCard(self, cardId):
         return self.cardService.info(cardId=cardId)
 
     def createBoard(self, name):
-        board = self.boardService.addBoard(name=name)
-        return board
+        return self.boardService.addBoard(name=name)
     
     def createList(self, boardId, nameOfList):
-        board = self.boardService.findBoard(boardId)
-        if board is False:
-            return False
-        list = self.listService.addList(name=nameOfList)
-        list.board = board
-        self.boardService.addList(boardId=boardId, list=list)
+        self.boardService.createList(boardId=boardId, nameOfList=nameOfList)
     
     def setBoardName(self, boardId, name):
         return self.boardService.setName(boardId=boardId, name=name)
